@@ -38,11 +38,8 @@
                             <flux:sidebar.item icon="rectangle-stack" :href="route('admin.packages')" :current="request()->routeIs('admin.packages')" wire:navigate>
                                 {{ __('Packages') }}
                             </flux:sidebar.item>
-                        </flux:sidebar.group>
-
-                        <flux:sidebar.group :heading="__('Reporting')" class="grid">
-                            <flux:sidebar.item icon="chart-bar" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>
-                                {{ __('Admin Dashboard') }}
+                            <flux:sidebar.item icon="banknotes" :href="route('admin.expenses')" :current="request()->routeIs('admin.expenses')" wire:navigate>
+                                {{ __('Expenses') }}
                             </flux:sidebar.item>
                         </flux:sidebar.group>
                     @endif
