@@ -1,32 +1,30 @@
 <?php
 
-use App\Listeners\StripeWebhookHandler;
 use App\Mail\CampaignDonationReceived;
 use App\Models\Campaign;
 use App\Models\CampaignDonation;
+use App\Services\CampaignCheckoutService;
 use Illuminate\Support\Facades\Mail;
-use Laravel\Cashier\Events\WebhookReceived;
 
 beforeEach(function () {
     Mail::fake();
 });
 
-function checkoutCompletedPayload(int $donationId, string $paymentStatus = 'paid'): array
+/**
+ * Build a partial mock of the checkout service whose Stripe `retrieveSession`
+ * call is stubbed, so the completion logic can be tested without hitting Stripe.
+ */
+function fakeCheckoutService(?array $session): CampaignCheckoutService
 {
-    return [
-        'type' => 'checkout.session.completed',
-        'data' => [
-            'object' => [
-                'id' => 'cs_test_123',
-                'payment_status' => $paymentStatus,
-                'payment_intent' => 'pi_test_123',
-                'metadata' => ['donation_id' => $donationId],
-            ],
-        ],
-    ];
+    $mock = Mockery::mock(CampaignCheckoutService::class)->makePartial();
+    $mock->shouldAllowMockingProtectedMethods()
+        ->shouldReceive('retrieveSession')
+        ->andReturn($session ? (object) $session : null);
+
+    return $mock;
 }
 
-test('a completed checkout session marks the card donation as completed', function () {
+test('a paid checkout callback auto-completes the card donation', function () {
     $campaign = Campaign::factory()->active()->create(['goal_amount' => 100000]);
     $donation = CampaignDonation::factory()->for($campaign)->card()->create([
         'amount' => 10000,
@@ -34,7 +32,9 @@ test('a completed checkout session marks the card donation as completed', functi
         'stripe_session_id' => 'cs_test_123',
     ]);
 
-    (new StripeWebhookHandler)->handle(new WebhookReceived(checkoutCompletedPayload($donation->id)));
+    $service = fakeCheckoutService(['payment_status' => 'paid', 'payment_intent' => 'pi_test_123']);
+
+    $service->completeFromSession('cs_test_123');
 
     $donation->refresh();
     expect($donation->status)->toBe(CampaignDonation::STATUS_COMPLETED);
@@ -45,35 +45,37 @@ test('a completed checkout session marks the card donation as completed', functi
     Mail::assertQueued(CampaignDonationReceived::class);
 });
 
-test('an unpaid checkout session does not complete the donation', function () {
+test('an unpaid checkout callback leaves the donation pending', function () {
     $campaign = Campaign::factory()->active()->create();
     $donation = CampaignDonation::factory()->for($campaign)->card()->create([
-        'amount' => 10000,
         'status' => CampaignDonation::STATUS_PENDING,
+        'stripe_session_id' => 'cs_test_123',
     ]);
 
-    (new StripeWebhookHandler)->handle(new WebhookReceived(checkoutCompletedPayload($donation->id, 'unpaid')));
+    fakeCheckoutService(['payment_status' => 'unpaid'])->completeFromSession('cs_test_123');
 
     expect($donation->fresh()->status)->toBe(CampaignDonation::STATUS_PENDING);
+    Mail::assertNothingQueued();
 });
 
-test('the webhook is idempotent when replayed', function () {
+test('completing the callback twice is idempotent', function () {
     $campaign = Campaign::factory()->active()->create();
     $donation = CampaignDonation::factory()->for($campaign)->card()->create([
         'amount' => 10000,
         'status' => CampaignDonation::STATUS_PENDING,
+        'stripe_session_id' => 'cs_test_123',
     ]);
 
-    $handler = new StripeWebhookHandler;
-    $handler->handle(new WebhookReceived(checkoutCompletedPayload($donation->id)));
-    $handler->handle(new WebhookReceived(checkoutCompletedPayload($donation->id)));
+    $service = fakeCheckoutService(['payment_status' => 'paid', 'payment_intent' => 'pi_test_123']);
+    $service->completeFromSession('cs_test_123');
+    $service->completeFromSession('cs_test_123');
 
     expect(CampaignDonation::where('status', CampaignDonation::STATUS_COMPLETED)->count())->toBe(1);
     Mail::assertQueued(CampaignDonationReceived::class, 1);
 });
 
-test('a checkout session with an unknown donation id is ignored', function () {
-    (new StripeWebhookHandler)->handle(new WebhookReceived(checkoutCompletedPayload(999999)));
+test('an unknown session id is ignored', function () {
+    $result = fakeCheckoutService(['payment_status' => 'paid'])->completeFromSession('cs_missing');
 
-    expect(CampaignDonation::count())->toBe(0);
+    expect($result)->toBeNull();
 });

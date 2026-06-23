@@ -111,6 +111,27 @@ test('a card money donation redirects to the stripe checkout url', function () {
     expect($donation->stripe_session_id)->toBe('cs_test_123');
 });
 
+test('returning from stripe with a paid session auto-completes the donation', function () {
+    $campaign = Campaign::factory()->active()->create(['goal_amount' => 100000]);
+    $donation = CampaignDonation::factory()->for($campaign)->card()->create([
+        'amount' => 10000,
+        'status' => CampaignDonation::STATUS_PENDING,
+        'stripe_session_id' => 'cs_test_123',
+    ]);
+
+    $service = Mockery::mock(CampaignCheckoutService::class)->makePartial();
+    $service->shouldAllowMockingProtectedMethods()
+        ->shouldReceive('retrieveSession')
+        ->andReturn((object) ['payment_status' => 'paid', 'payment_intent' => 'pi_test_123']);
+    $this->instance(CampaignCheckoutService::class, $service);
+
+    $this->get(route('campaigns.show', $campaign).'?donation=success&session_id=cs_test_123')
+        ->assertOk();
+
+    expect($donation->fresh()->status)->toBe(CampaignDonation::STATUS_COMPLETED);
+    expect($campaign->fresh()->raisedAmount())->toBe(10000);
+});
+
 test('donations are rejected when the campaign is not active', function () {
     $campaign = Campaign::factory()->create(['status' => Campaign::STATUS_DRAFT]);
 
