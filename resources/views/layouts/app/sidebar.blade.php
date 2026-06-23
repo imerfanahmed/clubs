@@ -15,30 +15,38 @@
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
+                </flux:sidebar.group>
 
-                    @auth
-                        @if (auth()->user()->isAdmin())
-                            <flux:sidebar.item icon="users" :href="route('admin.members.pending')" :current="request()->routeIs('admin.members.pending')" wire:navigate>
+                @auth
+                    @if (auth()->user()->isAdmin())
+                        <flux:sidebar.group :heading="__('Members')" class="grid">
+                            <flux:sidebar.item icon="user-plus" :href="route('admin.members.pending')" :current="request()->routeIs('admin.members.pending')" wire:navigate>
                                 {{ __('Pending Members') }}
                             </flux:sidebar.item>
                             <flux:sidebar.item icon="users" :href="route('admin.members')" :current="request()->routeIs('admin.members')" wire:navigate>
                                 {{ __('All Members') }}
                             </flux:sidebar.item>
-                            <flux:sidebar.item icon="credit-card" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>
-                                {{ __('Admin Dashboard') }}
+                            <flux:sidebar.item icon="chat-bubble-left" :href="route('admin.sms')" :current="request()->routeIs('admin.sms')" wire:navigate>
+                                {{ __('SMS Campaigns') }}
                             </flux:sidebar.item>
+                        </flux:sidebar.group>
+
+                        <flux:sidebar.group :heading="__('Payments')" class="grid">
                             <flux:sidebar.item icon="banknotes" :href="route('admin.payments')" :current="request()->routeIs('admin.payments')" wire:navigate>
                                 {{ __('Payments') }}
                             </flux:sidebar.item>
                             <flux:sidebar.item icon="rectangle-stack" :href="route('admin.packages')" :current="request()->routeIs('admin.packages')" wire:navigate>
                                 {{ __('Packages') }}
                             </flux:sidebar.item>
-                            <flux:sidebar.item icon="chat-bubble-left" :href="route('admin.sms')" :current="request()->routeIs('admin.sms')" wire:navigate>
-                                {{ __('SMS Campaigns') }}
+                        </flux:sidebar.group>
+
+                        <flux:sidebar.group :heading="__('Reporting')" class="grid">
+                            <flux:sidebar.item icon="chart-bar" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>
+                                {{ __('Admin Dashboard') }}
                             </flux:sidebar.item>
-                        @endif
-                    @endauth
-                </flux:sidebar.group>
+                        </flux:sidebar.group>
+                    @endif
+                @endauth
             </flux:sidebar.nav>
 
             <flux:spacer />
