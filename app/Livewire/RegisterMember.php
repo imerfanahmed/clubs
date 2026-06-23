@@ -8,8 +8,10 @@ use App\Models\User;
 use App\Services\PostcodeService;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Laravel\Cashier\Cashier;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -137,7 +139,7 @@ class RegisterMember extends Component
             'package_id' => ['required', 'exists:packages,id'],
         ]);
 
-        $setupIntent = \Laravel\Cashier\Cashier::stripe()->setupIntents->create([
+        $setupIntent = Cashier::stripe()->setupIntents->create([
             'payment_method_types' => ['card'],
         ]);
 
@@ -163,7 +165,7 @@ class RegisterMember extends Component
             'paymentMethodId' => ['required', 'string'],
         ]);
 
-        $user = \Illuminate\Support\Facades\DB::transaction(function () {
+        $user = DB::transaction(function () {
             $user = User::create([
                 'name' => $this->name,
                 'email' => $this->email,
