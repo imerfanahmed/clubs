@@ -81,12 +81,41 @@
                     <!-- Select Member -->
                     <flux:field>
                         <flux:label>{{ __('Select Member') }}</flux:label>
-                        <flux:select wire:model.live="userId" required>
-                            <option value="">{{ __('Choose a member...') }}</option>
-                            @foreach ($this->members as $member)
-                                <option value="{{ $member->id }}">{{ $member->name }} ({{ $member->email }})</option>
-                            @endforeach
-                        </flux:select>
+
+                        @if ($userId)
+                            <div class="flex items-center gap-2 p-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800">
+                                <span class="text-sm flex-1">{{ $selectedMemberName }}</span>
+                                <button type="button" wire:click="clearMember" class="text-zinc-400 hover:text-zinc-600">
+                                    <flux:icon name="x-mark" class="w-4 h-4" />
+                                </button>
+                            </div>
+                        @else
+                            <div class="relative" wire:ignore x-data="{ open: false }">
+                                <flux:input
+                                    wire:model.live="memberSearch"
+                                    x-on:focus="open = true"
+                                    x-on:click.away="open = false"
+                                    x-on:keydown.escape="open = false"
+                                    placeholder="{{ __('Search by name or email...') }}"
+                                />
+                                <div x-show="open && $wire.memberSearch.length > 0"
+                                     class="absolute z-50 mt-1 w-full rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 shadow-lg max-h-60 overflow-y-auto">
+                                    @foreach ($this->searchMembers as $member)
+                                        <button type="button"
+                                                wire:click="selectMember({{ $member->id }})"
+                                                x-on:click="open = false"
+                                                class="w-full text-left px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 border-b border-neutral-100 dark:border-neutral-700 last:border-0">
+                                            <div class="font-medium">{{ $member->name }}</div>
+                                            <div class="text-xs text-zinc-500">{{ $member->email }}</div>
+                                        </button>
+                                    @endforeach
+                                    <div x-show="$wire.searchMembers.length === 0" class="px-3 py-4 text-sm text-zinc-500 text-center">
+                                        {{ __('No members found.') }}
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         <flux:error name="userId" />
                     </flux:field>
 

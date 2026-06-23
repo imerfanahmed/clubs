@@ -17,6 +17,10 @@ class Payments extends Component
 {
     public ?int $userId = null;
 
+    public string $memberSearch = '';
+
+    public string $selectedMemberName = '';
+
     public string $amount = '';
 
     public string $paidAt = '';
@@ -27,10 +31,38 @@ class Payments extends Component
 
     public string $reasonDescription = '';
 
+    protected bool $showMemberResults = false;
+
     public function mount(): void
     {
         $this->paidAt = now()->format('Y-m-d');
         $this->paidToId = Auth::id();
+    }
+
+    public function updatedMemberSearch(): void
+    {
+        $this->showMemberResults = true;
+    }
+
+    public function selectMember(int $id): void
+    {
+        $user = User::role('member')->find($id);
+
+        if (! $user) {
+            return;
+        }
+
+        $this->userId = $id;
+        $this->selectedMemberName = $user->name.' ('.$user->email.')';
+        $this->memberSearch = '';
+        $this->showMemberResults = false;
+    }
+
+    public function clearMember(): void
+    {
+        $this->userId = null;
+        $this->selectedMemberName = '';
+        $this->memberSearch = '';
     }
 
     public function recordPayment(): void
@@ -61,7 +93,7 @@ class Payments extends Component
             'paid_to_id' => $this->paidToId,
         ]);
 
-        $this->reset(['userId', 'amount', 'reason', 'reasonDescription']);
+        $this->reset(['userId', 'amount', 'reason', 'reasonDescription', 'memberSearch', 'selectedMemberName']);
         $this->paidAt = now()->format('Y-m-d');
         $this->paidToId = Auth::id();
 
@@ -72,6 +104,23 @@ class Payments extends Component
     public function members()
     {
         return User::role('member')->orderBy('name')->get();
+    }
+
+    #[Computed]
+    public function searchMembers()
+    {
+        if (strlen($this->memberSearch) < 1) {
+            return [];
+        }
+
+        return User::role('member')
+            ->where(function ($q) {
+                $q->where('name', 'like', '%'.$this->memberSearch.'%')
+                  ->orWhere('email', 'like', '%'.$this->memberSearch.'%');
+            })
+            ->orderBy('name')
+            ->limit(10)
+            ->get();
     }
 
     #[Computed]
