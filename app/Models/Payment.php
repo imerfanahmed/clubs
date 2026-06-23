@@ -18,6 +18,8 @@ class Payment extends Model
         'amount',
         'currency',
         'status',
+        'reason',
+        'reason_description',
         'period_start',
         'period_end',
         'paid_at',

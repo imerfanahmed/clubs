@@ -28,7 +28,11 @@
             <tbody>
                 @forelse ($this->members as $member)
                     <tr class="border-t border-neutral-200 dark:border-neutral-700">
-                        <td class="p-3 font-medium">{{ $member->name }}</td>
+                        <td class="p-3 font-medium">
+                            <a href="{{ route('admin.members.profile', $member) }}" wire:navigate class="hover:underline text-blue-600 dark:text-blue-400">
+                                {{ $member->name }}
+                            </a>
+                        </td>
                         <td class="p-3">{{ $member->email }}</td>
                         <td class="p-3">{{ $member->package?->name ?? '-' }}</td>
                         <td class="p-3">

@@ -14,6 +14,7 @@
                             <th class="text-left p-3">{{ __('Member') }}</th>
                             <th class="text-left p-3">{{ __('Amount') }}</th>
                             <th class="text-left p-3">{{ __('Payment Date') }}</th>
+                            <th class="text-left p-3">{{ __('Reason') }}</th>
                             <th class="text-left p-3">{{ __('Type / Status') }}</th>
                             <th class="text-left p-3">{{ __('Paid To') }}</th>
                         </tr>
@@ -30,6 +31,16 @@
                                 </td>
                                 <td class="p-3">
                                     {{ $payment->paid_at ? $payment->paid_at->format('d M Y') : $payment->created_at->format('d M Y') }}
+                                </td>
+                                <td class="p-3">
+                                    @if ($payment->reason)
+                                        <flux:badge size="sm" color="blue">{{ $payment->reason }}</flux:badge>
+                                        @if ($payment->reason_description)
+                                            <div class="text-xs text-neutral-500 mt-1">{{ $payment->reason_description }}</div>
+                                        @endif
+                                    @else
+                                        <span class="text-xs text-neutral-400">—</span>
+                                    @endif
                                 </td>
                                 <td class="p-3">
                                     @if ($payment->stripe_invoice_id && str_starts_with($payment->stripe_invoice_id, 'manual_'))
@@ -50,7 +61,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="p-6 text-center text-zinc-500 dark:text-zinc-400" colspan="5">
+                                <td class="p-6 text-center text-zinc-500 dark:text-zinc-400" colspan="6">
                                     {{ __('No payments recorded yet.') }}
                                 </td>
                             </tr>
@@ -86,17 +97,27 @@
                         <flux:error name="amount" />
                     </flux:field>
 
-                    <!-- Package (Optional) -->
+                    <!-- Reason -->
                     <flux:field>
-                        <flux:label>{{ __('Package (Optional)') }}</flux:label>
-                        <flux:select wire:model="packageId">
-                            <option value="">{{ __('None / One-off') }}</option>
-                            @foreach ($this->packages as $package)
-                                <option value="{{ $package->id }}">{{ $package->name }} (£{{ number_format($package->price / 100, 2) }})</option>
-                            @endforeach
+                        <flux:label>{{ __('Reason') }}</flux:label>
+                        <flux:select wire:model.live="reason" required>
+                            <option value="">{{ __('Select a reason...') }}</option>
+                            <option value="Membership Fee">{{ __('Membership Fee') }}</option>
+                            <option value="Event Fee">{{ __('Event Fee') }}</option>
+                            <option value="Donation">{{ __('Donation') }}</option>
+                            <option value="Late Fee">{{ __('Late Fee') }}</option>
+                            <option value="Other">{{ __('Other') }}</option>
                         </flux:select>
-                        <flux:error name="packageId" />
+                        <flux:error name="reason" />
                     </flux:field>
+
+                    @if ($reason === 'Other')
+                        <flux:field>
+                            <flux:label>{{ __('Description') }}</flux:label>
+                            <flux:textarea wire:model="reasonDescription" rows="3" placeholder="{{ __('Describe the reason for this payment...') }}" />
+                            <flux:error name="reasonDescription" />
+                        </flux:field>
+                    @endif
 
                     <!-- Payment Date -->
                     <flux:field>

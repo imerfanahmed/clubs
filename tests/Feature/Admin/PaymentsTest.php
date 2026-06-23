@@ -1,7 +1,6 @@
 <?php
 
 use App\Livewire\Admin\Payments as AdminPayments;
-use App\Models\Package;
 use App\Models\Payment;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -18,18 +17,6 @@ beforeEach(function () {
 
     $this->member = User::factory()->create();
     $this->member->assignRole('member');
-
-    $this->package = Package::create([
-        'name' => 'Basic',
-        'slug' => 'basic',
-        'description' => 'Standard club membership',
-        'price' => 2500,
-        'interval' => 'month',
-        'is_active' => true,
-        'sort_order' => 1,
-    ]);
-
-    $this->member->update(['package_id' => $this->package->id]);
 });
 
 test('non-admins cannot access admin payments page', function () {
@@ -57,16 +44,9 @@ test('payments component has correct initial values', function () {
         ->assertSet('paidAt', now()->format('Y-m-d'))
         ->assertSet('paidToId', $this->admin->id)
         ->assertSet('amount', '')
-        ->assertSet('userId', null);
-});
-
-test('selecting a member autofills package and price in component', function () {
-    $this->actingAs($this->admin);
-
-    Livewire::test(AdminPayments::class)
-        ->set('userId', $this->member->id)
-        ->assertSet('packageId', $this->package->id)
-        ->assertSet('amount', '25.00');
+        ->assertSet('userId', null)
+        ->assertSet('reason', '')
+        ->assertSet('reasonDescription', '');
 });
 
 test('admin can record manual payment successfully', function () {
@@ -78,26 +58,44 @@ test('admin can record manual payment successfully', function () {
     Livewire::test(AdminPayments::class)
         ->set('userId', $this->member->id)
         ->set('amount', '35.50')
-        ->set('packageId', $this->package->id)
+        ->set('reason', 'Membership Fee')
         ->set('paidAt', '2026-06-20')
-        ->set('paidToId', $anotherMember->id) // can select other members/users
+        ->set('paidToId', $anotherMember->id)
         ->call('recordPayment')
         ->assertHasNoErrors()
         ->assertSet('userId', null)
         ->assertSet('amount', '')
-        ->assertSet('packageId', null)
+        ->assertSet('reason', '')
+        ->assertSet('reasonDescription', '')
         ->assertSet('paidAt', now()->format('Y-m-d'))
         ->assertSet('paidToId', $this->admin->id);
 
-    // Verify payment was recorded in the database
     expect(Payment::count())->toBe(1);
 
     $payment = Payment::first();
     expect($payment->user_id)->toBe($this->member->id);
-    expect($payment->package_id)->toBe($this->package->id);
-    expect($payment->amount)->toBe(3550); // Converted to pence
+    expect($payment->amount)->toBe(3550);
     expect($payment->status)->toBe('paid');
+    expect($payment->reason)->toBe('Membership Fee');
+    expect($payment->reason_description)->toBeNull();
     expect($payment->stripe_invoice_id)->toStartWith('manual_');
     expect($payment->paid_at->format('Y-m-d'))->toBe('2026-06-20');
     expect($payment->paid_to_id)->toBe($anotherMember->id);
+});
+
+test('admin can record payment with other reason and description', function () {
+    $this->actingAs($this->admin);
+
+    Livewire::test(AdminPayments::class)
+        ->set('userId', $this->member->id)
+        ->set('amount', '15.00')
+        ->set('reason', 'Other')
+        ->set('reasonDescription', 'Fundraising contribution')
+        ->set('paidAt', '2026-06-15')
+        ->call('recordPayment')
+        ->assertHasNoErrors();
+
+    $payment = Payment::first();
+    expect($payment->reason)->toBe('Other');
+    expect($payment->reason_description)->toBe('Fundraising contribution');
 });

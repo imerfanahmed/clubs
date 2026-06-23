@@ -26,6 +26,9 @@
                             <flux:sidebar.item icon="users" :href="route('admin.members')" :current="request()->routeIs('admin.members')" wire:navigate>
                                 {{ __('All Members') }}
                             </flux:sidebar.item>
+                            <flux:sidebar.item icon="user-plus" :href="route('admin.members.create')" :current="request()->routeIs('admin.members.create')" wire:navigate>
+                                {{ __('Create Member') }}
+                            </flux:sidebar.item>
                             <flux:sidebar.item icon="chat-bubble-left" :href="route('admin.sms')" :current="request()->routeIs('admin.sms')" wire:navigate>
                                 {{ __('SMS Campaigns') }}
                             </flux:sidebar.item>
