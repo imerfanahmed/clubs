@@ -148,6 +148,7 @@
             
             const isDark = document.documentElement.classList.contains('dark');
             cardElement = stripeElements.create('card', {
+                hidePostalCode: true,
                 style: {
                     base: {
                         color: isDark ? '#ffffff' : '#09090b',
@@ -199,7 +200,23 @@
 
             const { setupIntent, error } = await stripeInstance.confirmCardSetup(
                 '{{ $clientSecret }}',
-                { payment_method: { card: cardElement } }
+                {
+                    payment_method: {
+                        card: cardElement,
+                        billing_details: {
+                            name: $wire.name,
+                            phone: $wire.phone,
+                            address: {
+                                line1: $wire.line_1,
+                                line2: $wire.line_2 || null,
+                                city: $wire.city,
+                                state: $wire.county || null,
+                                postal_code: $wire.postcode,
+                                country: $wire.country,
+                            }
+                        }
+                    }
+                }
             );
 
             if (error) {
