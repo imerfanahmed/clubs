@@ -76,6 +76,40 @@
             </div>
         </div>
 
+        @php
+            $activeCampaigns = \App\Models\Campaign::active()->latest()->take(3)->get();
+        @endphp
+
+        @if ($activeCampaigns->isNotEmpty())
+            <div class="relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+                <h3 class="text-center text-amber-300/90 text-sm font-semibold tracking-widest uppercase mb-6">
+                    {{ __('Active Campaigns') }}
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach ($activeCampaigns as $campaign)
+                        <a href="{{ route('campaigns.show', $campaign) }}"
+                           class="block rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur transition hover:bg-white/10">
+                            <h4 class="text-white font-semibold mb-1 truncate">{{ $campaign->title }}</h4>
+                            @if ($campaign->summary)
+                                <p class="text-emerald-100/60 text-xs mb-3 line-clamp-2">{{ $campaign->summary }}</p>
+                            @endif
+                            <div class="h-2.5 w-full overflow-hidden rounded-full bg-emerald-950/50">
+                                <div class="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-300" style="width: {{ $campaign->progressPercent() }}%"></div>
+                            </div>
+                            <div class="mt-2 flex items-center justify-between text-xs">
+                                <span class="text-emerald-100/70">{{ $campaign->raisedFormatted() }} / {{ $campaign->goalFormatted() }}</span>
+                                <span class="font-semibold text-amber-300">{{ $campaign->progressPercent() }}%</span>
+                            </div>
+                            <span class="mt-3 inline-block text-xs font-semibold text-amber-300">{{ __('Donate') }} →</span>
+                        </a>
+                    @endforeach
+                </div>
+                <div class="text-center mt-6">
+                    <a href="{{ route('campaigns.index') }}" class="text-emerald-200/70 hover:text-white text-sm">{{ __('View all campaigns') }} →</a>
+                </div>
+            </div>
+        @endif
+
         <div class="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 text-center">
             <div class="flex items-center justify-center gap-4 text-emerald-200/30 text-xs">
                 <span>Masjid</span>

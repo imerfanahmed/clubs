@@ -2,7 +2,9 @@
 
 namespace App\Listeners;
 
+use App\Mail\CampaignDonationReceived;
 use App\Mail\PaymentFailedMail;
+use App\Models\CampaignDonation;
 use App\Models\Package;
 use App\Models\Payment;
 use App\Models\User;
@@ -21,8 +23,38 @@ class StripeWebhookHandler
             'invoice.payment_succeeded' => $this->handlePaymentSucceeded($payload),
             'invoice.payment_failed' => $this->handlePaymentFailed($payload),
             'charge.refunded' => $this->handleChargeRefunded($payload),
+            'checkout.session.completed' => $this->handleCheckoutCompleted($payload),
             default => null,
         };
+    }
+
+    protected function handleCheckoutCompleted(array $payload): void
+    {
+        $session = $payload['data']['object'];
+
+        $donationId = $session['metadata']['donation_id'] ?? null;
+
+        if (! $donationId || ($session['payment_status'] ?? null) !== 'paid') {
+            return;
+        }
+
+        $donation = CampaignDonation::where('id', $donationId)
+            ->where('status', CampaignDonation::STATUS_PENDING)
+            ->first();
+
+        if (! $donation) {
+            return;
+        }
+
+        $donation->update([
+            'status' => CampaignDonation::STATUS_COMPLETED,
+            'stripe_payment_intent_id' => $session['payment_intent'] ?? null,
+            'paid_at' => now(),
+        ]);
+
+        if ($donation->recipientEmail()) {
+            Mail::to($donation->recipientEmail())->queue(new CampaignDonationReceived($donation));
+        }
     }
 
     protected function handlePaymentSucceeded(array $payload): void

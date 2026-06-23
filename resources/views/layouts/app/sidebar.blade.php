@@ -45,6 +45,12 @@
                                 {{ __('Expenses') }}
                             </flux:sidebar.item>
                         </flux:sidebar.group>
+
+                        <flux:sidebar.group :heading="__('Fundraising')" class="grid">
+                            <flux:sidebar.item icon="megaphone" :href="route('admin.campaigns')" :current="request()->routeIs('admin.campaigns')" wire:navigate>
+                                {{ __('Campaigns') }}
+                            </flux:sidebar.item>
+                        </flux:sidebar.group>
                     @endif
                 @endauth
             </flux:sidebar.nav>
