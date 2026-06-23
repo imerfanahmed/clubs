@@ -21,6 +21,7 @@ class Payment extends Model
         'period_start',
         'period_end',
         'paid_at',
+        'paid_to_id',
     ];
 
     protected function casts(): array
@@ -40,5 +41,10 @@ class Payment extends Model
     public function package(): BelongsTo
     {
         return $this->belongsTo(Package::class);
+    }
+
+    public function paidTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'paid_to_id');
     }
 }

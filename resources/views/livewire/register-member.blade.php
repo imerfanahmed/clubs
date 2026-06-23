@@ -87,16 +87,30 @@
                 </div>
             @endif
 
-            <div class="p-4 border rounded-lg bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700" wire:ignore>
-                <div id="card-element"></div>
-            </div>
+            <label class="flex items-center gap-3 cursor-pointer">
+                <flux:checkbox wire:model.live="skipCardDetails" />
+                <span class="text-sm text-zinc-600 dark:text-zinc-400">{{ __('Skip card details and continue with manual payment') }}</span>
+            </label>
 
-            <div id="card-errors" class="hidden p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400" role="alert">
-                <div class="flex items-start gap-2">
-                    <flux:icon name="credit-card" class="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span id="card-error-message"></span>
+            @if (!$skipCardDetails)
+                <div class="p-4 border rounded-lg bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700" wire:ignore>
+                    <div id="card-element"></div>
                 </div>
-            </div>
+
+                <div id="card-errors" class="hidden p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400" role="alert">
+                    <div class="flex items-start gap-2">
+                        <flux:icon name="credit-card" class="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span id="card-error-message"></span>
+                    </div>
+                </div>
+            @else
+                <div class="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-sm text-amber-600 dark:text-amber-400">
+                    <div class="flex items-center gap-2">
+                        <flux:icon name="banknotes" class="w-4 h-4" />
+                        <span>{{ __('You will be able to pay manually later. An admin will contact you with payment instructions.') }}</span>
+                    </div>
+                </div>
+            @endif
 
             <flux:button id="submit-card-button" variant="primary" class="w-full" onclick="handleCardSubmit()">
                 {{ __('Submit Application') }}
@@ -183,14 +197,24 @@
         }
 
         window.handleCardSubmit = async function() {
+            const button = document.getElementById('submit-card-button');
+            button.disabled = true;
+            button.textContent = 'Processing...';
+
+            if ($wire.skipCardDetails) {
+                try {
+                    await $wire.call('confirmPayment');
+                } catch (err) {
+                    button.disabled = false;
+                    button.textContent = 'Submit Application';
+                }
+                return;
+            }
+
             if (!cardElement) {
                 mountCard();
                 if (!cardElement) return;
             }
-
-            const button = document.getElementById('submit-card-button');
-            button.disabled = true;
-            button.textContent = 'Processing...';
 
             // Clear previous errors before submission starts
             const errorDiv = document.getElementById('card-errors');
@@ -238,13 +262,26 @@
 
         $wire.$watch('step', (value) => {
             if (value === 4) {
-                setTimeout(mountCard, 50);
+                if (!$wire.skipCardDetails) {
+                    setTimeout(mountCard, 50);
+                }
             }
         });
 
-        if ($wire.step === 4) {
+        if ($wire.step === 4 && !$wire.skipCardDetails) {
             setTimeout(mountCard, 50);
         }
+
+        $wire.$watch('skipCardDetails', (value) => {
+            if (value) {
+                if (cardElement) {
+                    cardElement.destroy();
+                    cardElement = null;
+                }
+            } else {
+                setTimeout(mountCard, 50);
+            }
+        });
     </script>
     @endscript
 </div>

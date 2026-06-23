@@ -50,6 +50,8 @@ class RegisterMember extends Component
 
     public string $paymentMethodId = '';
 
+    public bool $skipCardDetails = false;
+
     public string $clientSecret = '';
 
     public ?int $pendingUserId = null;
@@ -162,7 +164,7 @@ class RegisterMember extends Component
             'postcode' => ['required', 'string', 'max:10'],
             'country' => ['required', 'string', 'size:2'],
             'package_id' => ['required', 'exists:packages,id'],
-            'paymentMethodId' => ['required', 'string'],
+            'paymentMethodId' => $this->skipCardDetails ? ['nullable', 'string'] : ['required', 'string'],
         ]);
 
         $user = DB::transaction(function () {
@@ -186,8 +188,10 @@ class RegisterMember extends Component
                 'country' => $this->country,
             ]);
 
-            $user->createOrGetStripeCustomer();
-            $user->updateDefaultPaymentMethod($this->paymentMethodId);
+            if (! $this->skipCardDetails) {
+                $user->createOrGetStripeCustomer();
+                $user->updateDefaultPaymentMethod($this->paymentMethodId);
+            }
 
             return $user;
         });

@@ -4,6 +4,7 @@ use App\Http\Controllers\PostcodeController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Members as AdminMembers;
 use App\Livewire\Admin\Packages as AdminPackages;
+use App\Livewire\Admin\Payments as AdminPayments;
 use App\Livewire\Admin\PendingMembers;
 use App\Livewire\Admin\SmsCampaigns;
 use App\Livewire\MemberDashboard;
@@ -26,6 +27,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('/members', AdminMembers::class)->name('members');
     Route::get('/packages', AdminPackages::class)->name('packages');
     Route::get('/sms', SmsCampaigns::class)->name('sms');
+    Route::get('/payments', AdminPayments::class)->name('payments');
 });
 
 require __DIR__.'/settings.php';

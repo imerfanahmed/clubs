@@ -116,3 +116,46 @@ test('registration validations are enforced at confirmPayment step', function ()
     // Verify no new user is created (only the pre-existing one from factory)
     expect(User::count())->toBe(1);
 });
+
+test('registration works with skip card details option', function () {
+    $component = Livewire::test(RegisterMember::class)
+        ->set('name', 'Bob Smith')
+        ->set('email', 'bob@example.com')
+        ->set('phone', '+447123456789')
+        ->set('password', 'password123')
+        ->set('password_confirmation', 'password123')
+        ->call('submitPersonal')
+        ->set('line_1', '456 Test Avenue')
+        ->set('city', 'Manchester')
+        ->set('postcode', 'M1 1AA')
+        ->set('country', 'GB')
+        ->call('submitAddress')
+        ->set('package_id', $this->package->id)
+        ->call('submitPackage')
+        ->assertSet('step', 4);
+
+    // Enable skip card details
+    $component->set('skipCardDetails', true)
+        ->assertSet('skipCardDetails', true);
+
+    // Submit without paymentMethodId
+    $component->call('confirmPayment')
+        ->assertSet('step', 5)
+        ->assertHasNoErrors();
+
+    expect(User::count())->toBe(1);
+
+    $user = User::first();
+    expect($user->name)->toBe('Bob Smith');
+    expect($user->email)->toBe('bob@example.com');
+    expect($user->status)->toBe('pending');
+    expect($user->hasRole('member'))->toBeTrue();
+    expect($user->address)->not->toBeNull();
+
+    // Verify Stripe customer was NOT created
+    expect($user->stripe_id)->toBeNull();
+
+    // Verify user is authenticated
+    expect(auth()->check())->toBeTrue();
+    expect(auth()->user()->id)->toBe($user->id);
+});

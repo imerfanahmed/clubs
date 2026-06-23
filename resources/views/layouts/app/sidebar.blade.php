@@ -27,6 +27,9 @@
                             <flux:sidebar.item icon="credit-card" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>
                                 {{ __('Admin Dashboard') }}
                             </flux:sidebar.item>
+                            <flux:sidebar.item icon="banknotes" :href="route('admin.payments')" :current="request()->routeIs('admin.payments')" wire:navigate>
+                                {{ __('Payments') }}
+                            </flux:sidebar.item>
                             <flux:sidebar.item icon="rectangle-stack" :href="route('admin.packages')" :current="request()->routeIs('admin.packages')" wire:navigate>
                                 {{ __('Packages') }}
                             </flux:sidebar.item>
