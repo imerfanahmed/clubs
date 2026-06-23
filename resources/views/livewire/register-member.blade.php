@@ -16,29 +16,6 @@
 
     @elseif ($step === 2)
         <div class="flex flex-col gap-4">
-            <div class="flex gap-2">
-                <flux:input wire:model="postcode" :label="__('Postcode')" class="flex-1" />
-                <flux:button wire:click="lookupPostcode" variant="primary" class="mt-6">
-                    {{ __('Lookup') }}
-                </flux:button>
-            </div>
-
-            @if (count($addressOptions) > 0)
-                <div class="space-y-2">
-                    <flux:label>{{ __('Select an address') }}</flux:label>
-                    @foreach ($addressOptions as $index => $address)
-                        <label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700"
-                               wire:click="selectAddress({{ $index }})">
-                            <flux:radio :checked="$selectedAddressIndex === $index" />
-                            <div class="text-sm">
-                                <div>{{ $address['line_1'] }}</div>
-                                <div class="text-zinc-500">{{ $address['city'] }}, {{ $address['postcode'] }}</div>
-                            </div>
-                        </label>
-                    @endforeach
-                </div>
-            @endif
-
             <flux:input wire:model="line_1" :label="__('Address Line 1')" type="text" required />
             <flux:input wire:model="line_2" :label="__('Address Line 2')" type="text" />
             <flux:input wire:model="city" :label="__('City')" type="text" required />

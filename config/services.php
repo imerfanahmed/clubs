@@ -7,8 +7,4 @@ return [
         'api_key' => env('CLICKSEND_API_KEY'),
     ],
 
-    'ideal_postcodes' => [
-        'key' => env('IDEAL_POSTCODES_API_KEY'),
-    ],
-
 ];

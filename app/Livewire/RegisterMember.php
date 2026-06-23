@@ -5,8 +5,6 @@ namespace App\Livewire;
 use App\Events\MemberRegistered;
 use App\Models\Package;
 use App\Models\User;
-use App\Services\PostcodeService;
-use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -31,10 +29,6 @@ class RegisterMember extends Component
     public string $password_confirmation = '';
 
     public string $postcode = '';
-
-    public array $addressOptions = [];
-
-    public ?int $selectedAddressIndex = null;
 
     public string $line_1 = '';
 
@@ -80,45 +74,6 @@ class RegisterMember extends Component
         ]);
 
         $this->step = 2;
-    }
-
-    public function lookupPostcode(PostcodeService $postcodeService): void
-    {
-        $this->validate([
-            'postcode' => ['required', 'string', 'max:10'],
-        ]);
-
-        if (! PostcodeService::isValidUkPostcode($this->postcode)) {
-            Flux::toast(variant: 'error', text: 'Invalid UK postcode format.');
-
-            return;
-        }
-
-        $result = $postcodeService->lookup($this->postcode);
-
-        if (! $result['success']) {
-            Flux::toast(variant: 'error', text: $result['message']);
-
-            return;
-        }
-
-        $this->addressOptions = $result['addresses'];
-        $this->selectedAddressIndex = null;
-    }
-
-    public function selectAddress(int $index): void
-    {
-        if (! isset($this->addressOptions[$index])) {
-            return;
-        }
-
-        $address = $this->addressOptions[$index];
-        $this->line_1 = $address['line_1'];
-        $this->line_2 = $address['line_2'] ?? '';
-        $this->city = $address['city'];
-        $this->county = $address['county'] ?? '';
-        $this->postcode = $address['postcode'];
-        $this->selectedAddressIndex = $index;
     }
 
     public function submitAddress(): void
